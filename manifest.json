@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Shorts Timer",
+  "version": "1.1",
+  "description": "YouTube Shortsを指定時間以上視聴している場合に警告を表示します。",
+  "permissions": ["storage", "notifications", "tabs"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": ["https://www.youtube.com/shorts/*"],
+  "options_page": "options.html",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  }
+}
