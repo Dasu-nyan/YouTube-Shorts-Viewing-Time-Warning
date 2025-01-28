@@ -11,11 +11,25 @@ chrome.storage.sync.get(["limitInSeconds"], (result) => {
   }
 });
 
+// オプション画面での設定変更を監視
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "updateLimit") {
+    limitInSeconds = message.limitInSeconds; // 新しい制限時間を反映
+    console.log(`Limit time updated to: ${limitInSeconds} seconds`);
+    sendResponse({ message: "Limit time updated successfully!" });
+  } else if (message.type === "getCurrentTime") {
+    sendResponse({ currentTime: timer });
+  }
+});
+
+// タブが更新されたときのリスナー
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (tab.url && tab.url.startsWith("https://www.youtube.com/shorts/")) {
     if (!intervalId) {
+      timer = 0; // 新しい視聴セッションの開始
       intervalId = setInterval(() => {
         timer++;
+        console.log(`Timer: ${timer}s`);
         if (timer >= limitInSeconds) {
           chrome.notifications.create({
             type: "basic",
@@ -36,12 +50,4 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       timer = 0;
     }
   }
-});
-
-let viewingTime = 0;
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === "getCurrentTime") {
-        sendResponse({ currentTime: timer });
-    }
 });

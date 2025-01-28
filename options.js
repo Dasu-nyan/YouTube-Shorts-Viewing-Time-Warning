@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ストレージから現在の設定を取得
   chrome.storage.sync.get(["limitInSeconds"], (result) => {
-    const limitInSeconds = result.limitInSeconds || 10 * 60;
+    const limitInSeconds = result.limitInSeconds || 10 * 60; // デフォルトは10分
     const hours = Math.floor(limitInSeconds / 3600);
     const minutes = Math.floor((limitInSeconds % 3600) / 60);
     const seconds = limitInSeconds % 60;
@@ -26,6 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chrome.storage.sync.set({ limitInSeconds }, () => {
       alert("設定が保存されました！");
+
+      // バックグラウンドスクリプトに通知
+      chrome.runtime.sendMessage(
+        { type: "updateLimit", limitInSeconds },
+        (response) => {
+          console.log(response.message);
+        }
+      );
     });
   });
 });
