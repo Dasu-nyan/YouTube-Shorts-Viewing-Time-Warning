@@ -3,6 +3,7 @@ let intervalId = null;
 
 // デフォルトの視聴制限時間（10分 = 600秒）
 let limitInSeconds = 10 * 60;
+let currentTabId = null; // 現在対象のタブID
 
 // ストレージから設定を取得
 chrome.storage.sync.get(["limitInSeconds"], (result) => {
@@ -14,7 +15,7 @@ chrome.storage.sync.get(["limitInSeconds"], (result) => {
 // オプション画面での設定変更を監視
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "updateLimit") {
-    limitInSeconds = message.limitInSeconds; // 新しい制限時間を反映
+    limitInSeconds = message.limitInSeconds;
     console.log(`Limit time updated to: ${limitInSeconds} seconds`);
     sendResponse({ message: "Limit time updated successfully!" });
   } else if (message.type === "getCurrentTime") {
@@ -26,28 +27,56 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (tab.url && tab.url.startsWith("https://www.youtube.com/shorts/")) {
     if (!intervalId) {
-      timer = 0; // 新しい視聴セッションの開始
-      intervalId = setInterval(() => {
-        timer++;
-        console.log(`Timer: ${timer}s`);
-        if (timer >= limitInSeconds) {
-          chrome.notifications.create({
-            type: "basic",
-            iconUrl: "icon.png",
-            title: "視聴時間の警告",
-            message: `YouTube Shortsを${Math.floor(limitInSeconds / 60)}分以上視聴しています！`
-          });
-          clearInterval(intervalId);
-          intervalId = null;
-          timer = 0;
-        }
-      }, 1000); // 1秒ごとにカウント
+      currentTabId = tabId; // 現在のタブIDを記録
+      startTimer();
     }
-  } else {
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
-      timer = 0;
-    }
+  } else if (currentTabId === tabId) {
+    // 対象のタブが閉じられた場合
+    stopTimer();
   }
 });
+
+// タブが閉じられたときのリスナー
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (currentTabId === tabId) {
+    stopTimer();
+  }
+});
+
+// タイマーを開始する関数
+function startTimer() {
+  timer = 0; // タイマーリセット
+  intervalId = setInterval(() => {
+    // 現在のタブが存在しているか確認
+    chrome.tabs.get(currentTabId, (tab) => {
+      if (chrome.runtime.lastError || !tab) {
+        // タブが存在しない場合は停止
+        stopTimer();
+        return;
+      }
+
+      // タブが存在している場合のみタイマーを進める
+      timer++;
+      console.log(`Timer: ${timer}s`);
+      if (timer >= limitInSeconds) {
+        chrome.notifications.create({
+          type: "basic",
+          iconUrl: "icon.png",
+          title: "視聴時間の警告",
+          message: `YouTube Shortsを${Math.floor(limitInSeconds / 60)}分以上視聴しています！`
+        });
+        timer = 0; // 通知後にリセット
+      }
+    });
+  }, 1000); // 1秒ごとにカウント
+}
+
+// タイマーを停止する関数
+function stopTimer() {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+    timer = 0; // タイマーリセット
+    currentTabId = null; // タブIDリセット
+  }
+}
