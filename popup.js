@@ -19,13 +19,23 @@ document.addEventListener("DOMContentLoaded", function () {
         return result;
     }
 
-    // 視聴時間を取得
-    chrome.runtime.sendMessage({ type: "getCurrentTime" }, (response) => {
-        if (response && response.currentTime !== undefined) {
-            const formattedTime = formatTime(response.currentTime);
-            timeDisplay.textContent = `視聴時間: ${formattedTime}`;
-        } else {
-            timeDisplay.textContent = "No viewing time recorded.";
-        }
-    });
+    // 視聴時間を取得して表示を更新する関数
+    function updateTime() {
+        chrome.runtime.sendMessage({ type: "getCurrentTime" }, (response) => {
+            if (response && response.currentTime !== undefined) {
+                timeDisplay.textContent = `視聴時間: ${formatTime(response.currentTime)}`;
+            } else {
+                timeDisplay.textContent = "No viewing time recorded.";
+            }
+        });
+    }
+
+    // 初回表示
+    updateTime();
+
+    // 1秒ごとに更新
+    const intervalId = setInterval(updateTime, 1000);
+
+    // ポップアップが閉じられたときに更新を停止
+    window.addEventListener("unload", () => clearInterval(intervalId));
 });

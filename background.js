@@ -43,6 +43,24 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
+// 時間をフォーマットする関数
+function formatTime(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  let result = "";
+  if (hours > 0) {
+    result += `${hours}時間 `;
+  }
+  if (minutes > 0) {
+    result += `${minutes}分 `;
+  }
+  result += `${remainingSeconds}秒`;
+
+  return result;
+}
+
 // タイマーを開始する関数
 function startTimer() {
   timer = 0; // タイマーリセット
@@ -63,7 +81,7 @@ function startTimer() {
           type: "basic",
           iconUrl: "icon.png",
           title: "視聴時間の警告",
-          message: `YouTube Shortsを${Math.floor(limitInSeconds / 60)}分以上視聴しています！`
+          message: `YouTube Shortsを${formatTime(limitInSeconds)}以上視聴しています！`
         });
         timer = 0; // 通知後にリセット
       }
